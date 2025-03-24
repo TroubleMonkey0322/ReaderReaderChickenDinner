@@ -111,3 +111,101 @@ const SignupForm = ({}: { handleModalClose: () => void }) => {
 };
 
 export default SignupForm;
+
+import { gql } from '@apollo/client';
+
+// Define the ADD_USER mutation
+export const ADD_USER = gql`
+  mutation addUser($email: String!, $password: String!, $username: String!) {
+    addUser(email: $email, password: $password, username: $username) {
+      token
+      user {
+        _id
+        username
+        email
+      }
+    }
+  }
+`;
+
+import React, { useState } from 'react';
+import { useMutation } from '@apollo/client';
+import { ADD_USER } from './queries'; // Import the ADD_USER mutation
+
+const SignUp: React.FC = () => {
+  // State for form inputs
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
+
+  // Use Apollo's useMutation hook to execute the ADD_USER mutation
+  const [addUserMutation, { data, loading, error }] = useMutation(ADD_USER);
+
+  // Handle form submission
+  const handleAddUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      // Call the mutation with the provided form values
+      const response = await addUserMutation({
+        variables: { email, password, username },
+      });
+
+      // Handle the response (e.g., set token to localStorage, redirect, etc.)
+      const { token, user } = response.data.addUser;
+      localStorage.setItem('token', token);
+      console.log('User created:', user);
+
+      // Optionally redirect the user or show a success message
+      // e.g., redirect to login page or dashboard
+    } catch (err) {
+      console.error('Error creating user:', err);
+    }
+  };
+
+  // Show loading, error, or success state
+  if (loading) return <p>Creating user...</p>;
+  if (error) return <p>Error: {error.message}</p>;
+
+  return (
+    <div>
+      <h1>Sign Up</h1>
+      <form onSubmit={handleAddUser}>
+        <div>
+          <label htmlFor="email">Email:</label>
+          <input
+            type="email"
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+        <div>
+          <label htmlFor="password">Password:</label>
+          <input
+            type="password"
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+        <div>
+          <label htmlFor="username">Username:</label>
+          <input
+            type="text"
+            id="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+        </div>
+        <button type="submit">Sign Up</button>
+      </form>
+
+      {/* Show success or error message */}
+      {data && <p>User created successfully! Welcome, {data.addUser.user.username}.</p>}
+    </div>
+  );
+};
+
+export default SignUp;
+

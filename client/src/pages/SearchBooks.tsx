@@ -155,3 +155,65 @@ const SearchBooks = () => {
 };
 
 export default SearchBooks;
+
+
+import { gql } from '@apollo/client';
+
+export const SAVE_BOOK = gql`
+  mutation saveBook($bookId: String!) {
+    saveBook(bookId: $bookId) {
+      _id
+      savedBooks {
+        bookId
+        title
+        authors
+        description
+      }
+    }
+  }
+`;
+import React, { useState } from 'react';
+import { useMutation } from '@apollo/client';
+import { SAVE_BOOK } from './queries'; // Import the mutation
+import { Book } from './types'; // Define your Book type (adjust according to your structure)
+
+const BookComponent: React.FC = () => {
+  const [savedBooks, setSavedBooks] = useState<string[]>([]); // Local state for saved books
+  const [saveBookMutation, { loading, error }] = useMutation(SAVE_BOOK); // useMutation hook
+
+  const handleSaveBook = async (bookId: string) => {
+    try {
+      const { data } = await saveBookMutation({
+        variables: { bookId }, // Pass the bookId to the mutation
+      });
+
+      // After saving the book, save the bookId to local state
+      if (data) {
+        setSavedBooks((prevBooks) => [...prevBooks, data.saveBook.bookId]);
+      }
+    } catch (err) {
+      console.error("Error saving book:", err);
+    }
+  };
+
+  return (
+    <div>
+      <h2>Book Component</h2>
+      <button onClick={() => handleSaveBook('12345')}>
+        Save Book
+      </button>
+      
+      {loading && <p>Saving book...</p>}
+      {error && <p>Error saving book: {error.message}</p>}
+
+      <h3>Saved Books:</h3>
+      <ul>
+        {savedBooks.map((bookId) => (
+          <li key={bookId}>{bookId}</li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+export default BookComponent;

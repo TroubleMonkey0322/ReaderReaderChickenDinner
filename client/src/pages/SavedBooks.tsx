@@ -124,3 +124,81 @@ const SavedBooks = () => {
 };
 
 export default SavedBooks;
+
+import React from 'react';
+import { useQuery } from '@apollo/client';
+import { GET_ME } from './queries';  // Import the GET_ME query
+import { REMOVE_BOOK } from './queries'; // Import the REMOVE_BOOK mutation
+import { Book } from './types'; // Adjust as per your types
+
+const BookListComponent: React.FC = () => {
+  // Use the useQuery hook to fetch the user data
+  const { data, loading, error } = useQuery(GET_ME);
+
+  // If there's loading or error, show loading/error states
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error.message}</p>;
+
+  const userData = data?.me; // Assuming the response has a `me` field with user info
+
+  // If there's no user data, you can redirect or show a message
+  if (!userData) return <p>No user data found.</p>;
+
+  // REMOVE_BOOK mutation
+  const [removeBookMutation] = useMutation(REMOVE_BOOK);
+
+  const handleDeleteBook = async (bookId: string) => {
+    try {
+      const { data } = await removeBookMutation({
+        variables: { bookId },
+      });
+
+      // Assuming removeBookId is responsible for updating the local state
+      removeBookId(bookId);
+
+      console.log('Book deleted:', data);
+    } catch (err) {
+      console.error('Error removing book:', err);
+    }
+  };
+
+  // Function to remove bookId from local state or anywhere it's stored
+  const removeBookId = (bookId: string) => {
+    // Implement the logic for removing the book ID from the local state or data
+    console.log('Book removed from state:', bookId);
+  };
+
+  return (
+    <div>
+      <h1>Your Books</h1>
+      <ul>
+        {userData.savedBooks.map((book: Book) => (
+          <li key={book.bookId}>
+            <span>{book.title}</span>
+            <button onClick={() => handleDeleteBook(book.bookId)}>
+              Remove Book
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+export default BookListComponent;
+
+import { gql } from '@apollo/client';
+
+export const REMOVE_BOOK = gql`
+  mutation removeBook($bookId: String!) {
+    removeBook(bookId: $bookId) {
+      _id
+      savedBooks {
+        bookId
+        title
+        authors
+        description
+      }
+    }
+  }
+`;

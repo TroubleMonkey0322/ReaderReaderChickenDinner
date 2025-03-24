@@ -93,3 +93,89 @@ const LoginForm = ({}: { handleModalClose: () => void }) => {
 };
 
 export default LoginForm;
+
+import { gql } from '@apollo/client';
+
+// Define the LOGIN_USER mutation
+export const LOGIN_USER = gql`
+  mutation loginUser($email: String!, $password: String!) {
+    loginUser(email: $email, password: $password) {
+      token
+      user {
+        _id
+        username
+        email
+      }
+    }
+  }
+`;
+import React, { useState } from 'react';
+import { useMutation } from '@apollo/client';
+import { LOGIN_USER } from './queries'; // Import the LOGIN_USER mutation
+
+const Login: React.FC = () => {
+  // State for form inputs
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  // Use Apollo's useMutation hook to execute the LOGIN_USER mutation
+  const [loginUserMutation, { data, loading, error }] = useMutation(LOGIN_USER);
+
+  // Handle form submission
+  const handleLoginUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      // Call the mutation with the provided form values
+      const response = await loginUserMutation({
+        variables: { email, password },
+      });
+
+      // Handle the response (e.g., set token to localStorage, redirect, etc.)
+      const { token, user } = response.data.loginUser;
+      localStorage.setItem('token', token);
+      console.log('Logged in user:', user);
+
+      // Optionally redirect the user or show a success message
+      // e.g., redirect to dashboard or home page
+    } catch (err) {
+      console.error('Error logging in:', err);
+    }
+  };
+
+  // Show loading, error, or success state
+  if (loading) return <p>Logging in...</p>;
+  if (error) return <p>Error: {error.message}</p>;
+
+  return (
+    <div>
+      <h1>Login</h1>
+      <form onSubmit={handleLoginUser}>
+        <div>
+          <label htmlFor="email">Email:</label>
+          <input
+            type="email"
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+        <div>
+          <label htmlFor="password">Password:</label>
+          <input
+            type="password"
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+        <button type="submit">Login</button>
+      </form>
+
+      {/* Show success or error message */}
+      {data && <p>Welcome back, {data.loginUser.user.username}!</p>}
+    </div>
+  );
+};
+
+export default Login;
